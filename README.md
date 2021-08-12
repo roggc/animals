@@ -1,0 +1,1 @@
+once cloned, you run *npm i* to install dependencies and *npm start* to start the project.
