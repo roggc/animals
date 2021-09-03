@@ -1,7 +1,10 @@
-import React,{useMemo} from 'react'
+import React,{useMemo,useCallback} from 'react'
 import styled from 'styled-components'
 import {users} from '../../assets'
 
+/**
+ * the shape of a user from users
+ */
 interface IUser {
     id: string;
     name: {
@@ -9,19 +12,26 @@ interface IUser {
         surname: string;
     };
     points: number;
+    /**
+     * list of animals that user love
+     */
     animals: string[];
     isActive: boolean;
     age: number;
 }
 
-interface IAppProps{}
+interface IAppProps extends React.HTMLAttributes<HTMLDivElement>{}
 
-export const App:React.FC<IAppProps>=({})=>{
-
+/**
+ * the animal lovers blog app
+ * @param {IAppProps} props 
+ * @returns {React.ReactElement}
+ */
+const App:React.FC<IAppProps>=({...props}):React.ReactElement=>{
     /**
-     * this calculates the list of different available animals in users
+     * list of animals that users love
      */
-    const availableAnimals=useMemo(()=>{
+    const listOfAnimals=useMemo(()=>{
         const animals:string[]=[]
         users.forEach((user)=>{
             user.animals.forEach((animal)=>{
@@ -33,54 +43,68 @@ export const App:React.FC<IAppProps>=({})=>{
         return animals
     },[users])
 
-    const getUsersForAnimalUpToTen=(animal:string)=>{
-        const usersForAnimal:IUser[]=[]
+    /**
+     * gets a list of users that loves some animal
+     * @param {string} animal the animal for which we are looking users
+     * @returns {IUser[]} a list of up to ten users, ordered in descending order respect to points of each user
+     */
+    const getUsersForAnimalUpToTen=useCallback((animal:string)=>{
+        const usersPerAnimal:IUser[]=[]
         users.forEach((user)=>{
             if(user.isActive){
                 if(user.animals.find(animal_=>animal===animal_)){
-                    usersForAnimal.push(user)
+                    usersPerAnimal.push(user)
                 }
             }
         })
-        return usersForAnimal.sort((a,b)=>b.points-a.points).slice(0,10)
-    }
+        return usersPerAnimal.sort((a,b)=>b.points-a.points).slice(0,10)
+    },[users])
 
-    const getComponent=(animal:string)=>{
-        return (
-            <ComponentContainer key={animal}>
-                <h2>{animal}</h2>
-                {getUsersForAnimalUpToTen(animal).map(user=>getSubComponent(user))}
-            </ComponentContainer>
-        )
-    }
+    /**
+     * gets the rendered content on the page per user
+     * @param {IUser} user a user
+     * @returns {JSX.Element} 
+     */
+     const getUserBlock=useCallback((user:IUser)=>
+     <UserBlockContainer key={user.id}>
+         <div>{user.name.given}{' '}{user.name.surname}</div>
+         <div>{user.points}{' pts'}</div>
+     </UserBlockContainer>,[])
 
-    const getSubComponent=(user:IUser)=>{
-        return (
-            <SubComponentContainer key={user.id}>
-                <div>{user.name.given}{' '}{user.name.surname}</div>
-                <div>{user.points}{' pts'}</div>
-            </SubComponentContainer>
-        )
-    }
+    /**
+     * gets the rendered content on the page per animal
+     * @param {string} animal an animal that users love
+     * @returns {JSX.Element}
+     */
+    const getAnimalBlock=useCallback((animal:string)=>
+        <AnimalBlockContainer key={animal}>
+            <h2>{animal}</h2>
+            {getUsersForAnimalUpToTen(animal).map((user)=>getUserBlock(user))}
+        </AnimalBlockContainer>,[getUsersForAnimalUpToTen,getUserBlock])
 
     return (
-        <AppContainer>
+        <AppContainer {...props}>
             <h1>Animals lovers blog</h1>
-            {availableAnimals.map(animal=>getComponent(animal))}
+            {listOfAnimals.map((animal)=>getAnimalBlock(animal))}
         </AppContainer>
     )
 }
+
+export default App
 
 const AppContainer=styled.div`
 font-family:sans-serif;
 `
 
-const SubComponentContainer=styled.div`
+/**
+ * display items in a row
+ */
+const UserBlockContainer=styled.div`
 display:flex;
 justify-content:space-between;
 `
 
-const ComponentContainer=styled.div`
+const AnimalBlockContainer=styled.div`
 width:fit-content;
 min-width:300px;
 `
